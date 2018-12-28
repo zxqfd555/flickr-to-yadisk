@@ -137,3 +137,36 @@ class FlickrClient:
             )
 
         return albums
+
+    def get_album_photo_ids(self, album_id):
+        request = FlickrAPIGetPhotosetRequest(user_id=self._user_id, photoset_id=album_id, page=1)
+        request_result = request.perform()
+        photo_ids = []
+        if request_result is None:
+            return None
+
+        total_pages = request_result['photoset']['pages']
+
+        self._append_photo_ids(request_result, photo_ids)
+        for page_num in range(2, total_pages + 1):
+            request = FlickrAPIGetPhotosetRequest(user_id=self._user_id, photoset_id=album_id, page=1)
+            request_result = request.perform()
+            self._append_photo_ids(request_result, photo_ids)
+
+        return photo_ids
+
+    def get_photo_cdn_url(self, photo_id):
+        request = FlickrAPIGetPhotoSizesRequest(photo_id=photo_id)
+        request_result = request.perform()
+        if not request_result:
+            return None
+        for size_info in request_result['sizes']['size']:
+            if size_info['label'] == 'Original':
+                return size_info['source']
+
+        print('Photo sizes were loaded, but no Original size had been found, very strange!', file=sys.stderr)
+        return None
+
+    def _append_photo_ids(self, request_result, photo_ids):
+        for photo_data in request_result['photoset']['photo']:
+            photo_ids.append(photo_data['id'])
