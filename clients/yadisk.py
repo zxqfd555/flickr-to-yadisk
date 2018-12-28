@@ -38,7 +38,7 @@ class YaDiskClient:
         )
 
         success = False
-        retry_timeout = 1.33
+        retry_timeout = 3
         for _ in range(5):
             try:
                 r = requests.post(
