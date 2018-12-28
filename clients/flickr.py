@@ -67,7 +67,6 @@ class FlickrAPIRequestBase:
 
         try:
             response = requests.get(req.to_url())
-            print(response.text)
             response.raise_for_status()
             response_json = response.json()
         except requests.exceptions.HTTPError:
@@ -104,3 +103,37 @@ class FlickrAPIGetPhotoSizesRequest(FlickrAPIRequestBase):
             'method': FLICKR_GET_PHOTO_SIZES_METHOD,
             'photo_id': photo_id,
         })
+
+
+class FlickrClient:
+
+    class FlickrAlbumDescription:
+
+        def __init__(self, name, album_id):
+            self.name = name
+            self.album_id = album_id
+
+    def __init__(self, user_id):
+        self._user_id = user_id
+
+    def get_albums_data(self, exclude_names=None):
+        exclude_names = exclude_names or []
+
+        request = FlickrAPIGetPhotosetsRequest(user_id=self._user_id)
+        result = request.perform()
+        if result is None:
+            return None
+
+        albums = []
+        for descr_json in result['photosets']['photoset']:
+            if descr_json['title']['_content'] in exclude_names:
+                continue
+
+            albums.append(
+                self.FlickrAlbumDescription(
+                    name=descr_json['title']['_content'],
+                    album_id=descr_json['id'],
+                )
+            )
+
+        return albums
