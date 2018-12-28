@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import argparse
 import time
 import os
@@ -71,6 +73,33 @@ def export_album(source_user_id, destination_dir, album_name, rps=None):
         )
 
 
+def export_albums_list(source_user_id, destination_dir, album_names_fname, rps=None):
+    """
+    The method is intended to export several albums in one run.
+
+    Like in the previous one, you can set high RPS, or even RPS = -1 with meaning that
+    there should be no limit. However this is discouraged in case of multiple photos, because
+    you'll soon hit the limit of API calls per hour at Flickr.
+
+    The recommended value for RPS is 1.
+    """
+    with open(album_names_fname, 'r') as f:
+        for line in f.readlines():
+            name = line.strip()
+            if not name:
+                continue
+            print('Starting exporting album named', name)
+            export_album(source_user_id, destination_dir, name, rps)
+
+
+def save_albums_list_to_file(source_user_id, albums_list_filename):
+    flickr = FlickrClient(source_user_id)
+    albums = flickr.get_albums_data(exclude_names=['Auto Upload'])
+    with open(albums_list_filename, 'w') as f:
+        for album in albums:
+            f.write(album.name + '\n')
+
+
 def export_one_photo(photo_id, album_name, flickr, yadisk):
     cdn_url = flickr.get_photo_cdn_url(photo_id)
     if not cdn_url:
@@ -96,19 +125,35 @@ if __name__ == '__main__':
     parser.add_argument(
         '--mode',
         choices=[
-            'recreate-album-folders',
             'export-album',
+            'export-albums-list',
+            'get-albums-list',
+            'recreate-album-folders',
         ],
         required=True
     )
     parser.add_argument('--source-user-id', required=True)
-    parser.add_argument('--destination-root-dir', type=str, required=True)
+    parser.add_argument('--destination-root-dir', type=str)
     parser.add_argument('--album-name', type=str)
+    parser.add_argument('--albums-list-filename', type=str)
     parser.add_argument('--rps', type=int)
     args = parser.parse_args()
 
     if args.mode == 'recreate-album-folders':
+        assert args.destination_root_dir, 'please specify --destination-root-dir'
+
         recreate_album_folders(args.source_user_id, args.destination_root_dir)
     elif args.mode == 'export-album':
-        assert args.album_name, 'please specify album name!'
+        assert args.album_name, 'please specify --album-name!'
+        assert args.destination_root_dir, 'please specify --destination-root-dir'
+
         export_album(args.source_user_id, args.destination_root_dir, args.album_name, rps=args.rps)
+    elif args.mode == 'get-albums-list':
+        assert args.albums_list_filename, 'please specify --albums-list-filename'
+
+        save_albums_list_to_file(args.source_user_id, args.albums_list_filename)
+    elif args.mode == 'export-albums-list':
+        assert args.albums_list_filename, 'please specify --albums-list-filename'
+        assert args.destination_root_dir, 'please specify --destination-root-dir'
+
+        export_albums_list(args.source_user_id, args.destination_root_dir, args.albums_list_filename, rps=args.rps)
