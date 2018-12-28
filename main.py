@@ -31,7 +31,7 @@ def export_album(source_user_id, destination_dir, album_name, rps=None):
     photos, because otherwise you can hit limit of 3600 RPH.
 
     For smaller albums, feel free to set RPS = -1. It disables rate limiting completely
-    and starts process in 32 threads.
+    and starts process in 8 threads.
     """
     rps = rps or 1
 
@@ -59,7 +59,7 @@ def export_album(source_user_id, destination_dir, album_name, rps=None):
             if time_spent < request_timeslice:
                 time.sleep(1.0 - request_timeslice)
     else:
-        pool = ThreadPool(32)
+        pool = ThreadPool(8)
         pool.map(
             lambda photo_id: export_one_photo(photo_id, album_name, flickr, yadisk),
             photo_ids

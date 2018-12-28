@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 
 import requests
 
@@ -35,13 +36,27 @@ class YaDiskClient:
                 full_path
             )
         )
-        try:
-            r = requests.post(
-                request_path,
-                headers={
-                    'Authorization': 'OAuth {}'.format(API_KEY)
-                }
-            )
-            r.raise_for_status()
-        except requests.exceptions.HTTPError:
-            print('unable to perform download assignment request', file=sys.stderr)
+
+        success = False
+        retry_timeout = 1.33
+        for _ in range(5):
+            try:
+                r = requests.post(
+                    request_path,
+                    headers={
+                        'Authorization': 'OAuth {}'.format(API_KEY)
+                    },
+                    timeout=2
+                )
+                r.raise_for_status()
+            except Exception:
+                print('retrying download assignment request...', file=sys.stderr)
+                time.sleep(retry_timeout)
+                retry_timeout *= 1.25
+                continue
+            else:
+                success = True
+                break
+
+        if not success:
+            print('unable to perform download assignment request')

@@ -65,13 +65,23 @@ class FlickrAPIRequestBase:
             self._token
         )
 
-        try:
-            response = requests.get(req.to_url())
-            response.raise_for_status()
-            response_json = response.json()
-        except requests.exceptions.HTTPError:
-            print('Exception happened while doing a request {}'.format(self._parameters['method']), sys.stderr)
-            return None
+        response_json = None
+        retry_timeout = 1.33
+        for _ in range(5):
+            try:
+                response = requests.get(req.to_url(), timeout=10)
+                response.raise_for_status()
+                response_json = response.json()
+            except Exception:
+                print('retrying request...', file=sys.stderr)
+                time.sleep(retry_timeout)
+                retry_timeout *= 1.25
+                continue
+            else:
+                break
+
+        if response_json is None:
+            print('exception happened while doing a request {}'.format(self._parameters['method']), sys.stderr)
 
         return response_json
 
@@ -149,7 +159,7 @@ class FlickrClient:
 
         self._append_photo_ids(request_result, photo_ids)
         for page_num in range(2, total_pages + 1):
-            request = FlickrAPIGetPhotosetRequest(user_id=self._user_id, photoset_id=album_id, page=1)
+            request = FlickrAPIGetPhotosetRequest(user_id=self._user_id, photoset_id=album_id, page=page_num)
             request_result = request.perform()
             self._append_photo_ids(request_result, photo_ids)
 
