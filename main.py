@@ -57,7 +57,7 @@ def export_album(source_user_id, destination_dir, album_name, rps=None):
             export_one_photo(photo_id, album_name, flickr, yadisk)
             time_spent = time.time() - time_before
             if time_spent < request_timeslice:
-                time.sleep(1.0 - request_timeslice)
+                time.sleep(request_timeslice - time_spent)
     else:
         pool = ThreadPool(8)
         pool.map(
