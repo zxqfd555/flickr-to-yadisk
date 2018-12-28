@@ -39,12 +39,17 @@ def export_album(source_user_id, destination_dir, album_name, rps=None):
     yadisk = YaDiskClient(destination_dir)
 
     albums = flickr.get_albums_data(exclude_names=['Auto Upload'])
-    album_id = 0
+    album_id = None
     for album in albums:
         if album.name == album_name:
             album_id = album.album_id
 
-    print('We\'ve found that album. The id is:', album_id)
+    if album_id:
+        print('We\'ve found that album. The id is:', album_id)
+    else:
+        print('Album not found. Terminating.')
+        return
+
     photo_ids = flickr.get_album_photo_ids(album_id)
     print('We\'ll export {} photos.'.format(len(photo_ids)))
 
