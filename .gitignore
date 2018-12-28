@@ -107,3 +107,4 @@ venv.bak/
 .apikeys
 .idea
 auxiliary
+.yadisk_token
